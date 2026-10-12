@@ -108,9 +108,16 @@ def normalize(data):
             duration = _num(e.get("duration_min"), where, "duration_min")
             if duration is not None and duration < 0:
                 raise InputError(f"{where}: duration_min 不能为负")
-            resolves = e.get("resolves") or []
-            if isinstance(resolves, str):
+            resolves = e.get("resolves")
+            if resolves is None:
+                resolves = []
+            elif isinstance(resolves, str):
                 resolves = [resolves]
+            if not isinstance(resolves, list) or not all(isinstance(r, (str, int)) and not isinstance(r, bool) for r in resolves):
+                raise InputError(f"{where}: resolves 应为 id 数组（如 [\"e1\", \"e2\"]），实际为 {resolves!r}")
+            pending = e.get("pending", False)
+            if not isinstance(pending, bool):
+                raise InputError(f"{where}: pending 应为 true/false（不加引号），实际为 {pending!r}")
             if resolves and t != "pos1":
                 raise InputError(f"{where}: 只有 pos1 可以填 resolves（type=zero 已自带破局）")
             eid = e.get("id")
@@ -125,7 +132,7 @@ def normalize(data):
                 "intensity": intensity,
                 "duration": duration,
                 "resolves": [str(r) for r in resolves],
-                "pending": bool(e.get("pending")),
+                "pending": pending,
                 "ep_index": ei,
                 "index": k,
             }
